@@ -1,0 +1,11 @@
+graph TD
+    A_Start((เข้าสู่ A: Start Engine)) --> A1{เชื่อมต่อ Server สำเร็จหรือไม่?};
+    
+    A1 -- ไม่สำเร็จ --> A2_Error[บันทึก Log: Error เชื่อมต่อ Server ล้มเหลว];
+    A2_Error --> A_NotReady((Engine ไม่พร้อม));
+    
+    A1 -- สำเร็จ --> A3_Success[บันทึก Log: เชื่อมต่อ Server สำเร็จ];
+    A3_Success --> A_Ready((Engine พร้อมทำงาน));
+    
+    A_NotReady --> A_End[จบกระบวนการ A];
+    A_Ready --> B_Schedule[ส่งต่อไปยัง B: ตรวจสอบ Schedule];

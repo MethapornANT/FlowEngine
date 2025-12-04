@@ -1,0 +1,15 @@
+graph TD
+    C_Start((เข้าสู่ C: Get CSC)) --> C1[ดึง ProjectID ล่าสุดจาก CSC]; 
+    
+    C1 --> C2{ProjectID ล่าสุด ซ้ำกับที่เคยบันทึกไปแล้วหรือไม่?};
+    
+    C2 -- ซ้ำ/เป็นข้อมูลเก่า --> C3_Log_Fail[บันทึก Log: ยังไม่มีข้อมูลใหม่ให้ดึง];
+    C3_Log_Fail --> C_End((จบกระบวนการ C)); 
+    
+    C2 -- ไม่ซ้ำ/เป็นข้อมูลใหม่ --> C4_Log_Success[บันทึก Log: พบข้อมูลใหม่ ProjectID: X]; 
+    
+    C4_Log_Success --> C5[ดึง GET ข้อมูล CSC ทั้งชุด]; 
+    
+    C5 --> C6_Log_Data[บันทึก Log: ดึงข้อมูลสำเร็จ];
+
+    C6_Log_Data --> D_Start[ส่งต่อไปยัง D: Map ข้อมูล];

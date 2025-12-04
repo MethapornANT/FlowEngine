@@ -1,0 +1,29 @@
+graph TD
+
+    %% D: MAP ข้อมูล Project จาก CSC ให้พร้อมใช้ใน WinSpeed
+
+    D_Start((เริ่ม D: MAP ข้อมูล Project)) --> D1[เตรียมข้อมูลจาก CSC เพื่อ MAP ให้ WinSpeed]
+
+    %% ส่งข้อมูลไป WinSpeed เพื่อ MAP/Sync
+    D1 --> D2[เรียก API POST/PUT ไปที่ WinSpeed เพื่อทำการ MAP]
+
+    %% ตรวจผล MAP
+    D2 --> D3{MAP สำเร็จหรือไม่}
+
+    %% เคสสำเร็จ -> ส่งต่อไปขั้น E
+    D3 -- สำเร็จ --> L_Success[LOG: MAP สำเร็จใน WinSpeed]
+    L_Success --> E_Start[ไปขั้นตอน E: POST ข้อมูลสุดท้ายเข้า WinSpeed]
+
+    %% เคสไม่สำเร็จ
+    D3 -- ไม่สำเร็จ --> EH_Map[เรียก ErrorHandler สำหรับ MAP ล้มเหลว]
+
+    %% สรุปผลจาก ErrorHandler
+    EH_Map --> EH_Result{ErrorHandler สรุปผล}
+
+    %% ลองใหม่
+    EH_Result -- ให้ลองใหม่ --> L_Retry[LOG: ErrorHandler ตัดสินใจให้ลองใหม่ในขั้น D]
+    L_Retry --> D1
+
+    %% หยุด / DeadQueue -> จบแบบล้มเหลว
+    EH_Result -- ให้หยุด --> L_Dead[LOG: ส่งงานนี้เข้าสู่ DeadQueue และจบขั้นตอน D แบบล้มเหลว]
+    L_Dead --> D_End((จบขั้นตอน D ด้วยสถานะล้มเหลว))

@@ -1,0 +1,6 @@
+graph TD
+    X_Start((เข้าสู่ X: Manual Handle)) --> X1_Alert[แจ้งเตือน Admin/ทีมงานเพื่อแก้ไขข้อมูล];
+    
+    X1_Alert --> X2_Log[บันทึก Log: Process หยุด, รอ Manual Intervention];
+    
+    X2_Log --> X_End((จบ X));

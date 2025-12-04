@@ -1,0 +1,11 @@
+graph TD
+
+    A_Start((Start Engine)) --> L_Start[LOG: เริ่มทำงานหน้า A]
+
+    L_Start --> A1{ถึงเวลาครบ 5 นาทีแล้วหรือยัง}
+
+    A1 -- ยังไม่ครบ --> A_Wait[รอให้ครบ 5 นาที]
+    A_Wait --> A1
+
+    A1 -- ครบแล้ว --> L_Ready[LOG: เริ่มขั้นตอน B]
+    L_Ready --> B_Start[ไปขั้นตอน B]

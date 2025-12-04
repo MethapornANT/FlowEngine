@@ -1,0 +1,31 @@
+graph TD
+
+    A[เริ่มประมวลผล Record และตั้งค่า attemptCount = 0] --> B[เรียก API เป้าหมาย ด้วย Timeout]
+
+    B --> C{ได้รับ Response หรือไม่}
+
+    C -- ไม่ --> E1[Transport Error เช่น Timeout หรือ Network Error]
+
+    C -- ใช่ --> D{Status Code เป็น 2xx หรือไม่}
+
+    D -- ใช่ --> F[บันทึก Log SUCCESS]
+
+    D -- ไม่ใช่ 2xx --> E{Status Code อยู่ในกลุ่มที่ Retry ได้หรือไม่}
+
+    E -- ใช่ 408 429 500 502 503 504 --> G[เพิ่มค่า attemptCount]
+
+    E -- ไม่ใช่ 400 401 403 404 422 --> H[ส่ง Record ไปยัง DeadQueue]
+
+    E1 --> G
+
+    G --> I{attemptCount ถึง maxRetryCount หรือยัง 10}
+
+    I -- ใช่ --> H
+
+    I -- ไม่ --> J[พักการทำงานชั่วคราว แล้วลองใหม่]
+
+    J --> B
+
+    F --> K[ประมวลผล Record ถัดไป]
+
+    H --> K

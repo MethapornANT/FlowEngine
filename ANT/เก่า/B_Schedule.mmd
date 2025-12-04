@@ -1,0 +1,66 @@
+graph TD
+
+    %% B: GET CSC และเลือก ProjectID ที่ควรส่งต่อไปขั้นตอน C
+
+    B_Start((เริ่ม B: GET CSC)) --> B1[เรียก API GET CSC ด้วย Timeout]
+
+    %% เช็คว่ามี Response กลับมาหรือไม่
+    B1 --> B2{ได้รับ Response จาก CSC หรือไม่}
+
+    %% กรณีไม่รับ Response -> ให้ ErrorHandler จัดการ
+    B2 -- ไม่ได้รับ --> EH_NoResp[เรียก ErrorHandler: Timeout / Network Error]
+
+    %% กรณีได้รับ Response
+    B2 -- ได้รับ --> B3{Status Code เป็น 2xx หรือไม่}
+
+    %% กรณี Status Code ผิดปกติ -> ให้ ErrorHandler จัดการ
+    B3 -- ไม่ใช่ 2xx --> EH_Status[เรียก ErrorHandler: Status Error]
+
+    %% กรณี 2xx ปกติ -> แปลงเป็นรายการ ProjectID
+    B3 -- เป็น 2xx --> B4[แปลง Response เป็นรายการ ProjectID]
+
+    %% ถ้าไม่มี ProjectID เลยในรอบนี้
+    B4 --> B5{มี ProjectID ในรายการหรือไม่}
+    B5 -- ไม่มี --> L_NoProj[LOG: ไม่มี ProjectID จาก CSC ในรอบนี้]
+    L_NoProj --> B_End((จบขั้นตอน B))
+
+    %% มี ProjectID อย่างน้อย 1 ตัว -> เริ่มวน
+    B5 -- มี --> P1[เริ่มวนแต่ละ ProjectID จากรายการ]
+
+    %% อ่านสถานะจากฐานข้อมูล
+    P1 --> P2[อ่านสถานะ ProjectID จากฐานข้อมูลสถานะ]
+    P2 --> P3{สถานะในระบบคืออะไร}
+
+    %% เคสที่ต้องประมวลผลต่อ (ใหม่ หรือ RETRY)
+    P3 -- ไม่พบข้อมูล หรือ RETRY --> L_Take[LOG: เลือก ProjectID นี้เข้าประมวลผล]
+    L_Take --> P_Add[เพิ่มเข้า list งานที่ต้องส่งต่อขั้นตอน C]
+
+    %% เคสที่ไม่ต้องแตะอีก (สำเร็จแล้ว หรือ DEAD)
+    P3 -- SUCCESS หรือ DEAD --> L_Skip[LOG: ข้าม ProjectID นี้]
+    L_Skip --> P_Next
+
+    %% หลังจากจัดการตัวปัจจุบันเสร็จ ไปเช็คว่ามีตัวถัดไปไหม
+    P_Add --> P_Next[ตรวจว่ามี ProjectID ถัดไปหรือไม่]
+
+    %% วน loop ProjectID
+    P_Next --> P4{ยังมี ProjectID ถัดไปหรือไม่}
+    P4 -- มี --> P1
+
+    %% ออกจาก loop แล้วเช็คว่ามีงานต้องส่งต่อ C ไหม
+    P4 -- ไม่มี --> B6{มี ProjectID ใน list ที่ต้องส่งต่อไป C หรือไม่}
+
+    B6 -- ไม่มี --> L_NoWork[LOG: ไม่มีงานที่ต้องประมวลผลในรอบนี้]
+    L_NoWork --> B_End
+
+    B6 -- มี --> L_SendToC[LOG: ส่ง list ProjectID ไปขั้นตอน C]
+    L_SendToC --> C_Start[ไปขั้นตอน C: ประมวลผลกับ WinSpeed]
+
+    %% ผลจาก ErrorHandler (ตัดสินใจก่อน แล้วค่อย LOG)
+    EH_NoResp --> EH_Result{ErrorHandler สรุปผล}
+    EH_Status --> EH_Result
+
+    EH_Result -- ให้ลองใหม่ --> L_EH_Retry[LOG: ErrorHandler ตัดสินใจให้ลองใหม่ในขั้น B]
+    L_EH_Retry --> B1
+
+    EH_Result -- ให้หยุด --> L_EH_Stop[LOG: ErrorHandler ตัดสินใจให้หยุดขั้นตอน B]
+    L_EH_Stop --> B_End

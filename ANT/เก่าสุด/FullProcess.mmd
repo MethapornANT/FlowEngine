@@ -1,0 +1,86 @@
+graph TD
+    H[รอรอบถัดไป] --> B_Start((เข้าสู่ B: ตรวจสอบ Schedule));
+
+    A_Start((เข้าสู่ A: Start Engine)) --> A1{เชื่อมต่อ Server สำเร็จหรือไม่?};
+    
+    A1 -- ไม่สำเร็จ --> A2_Error[บันทึก Log: Error เชื่อมต่อ Server ล้มเหลว];
+    A2_Error --> A_NotReady((Engine ไม่พร้อม));
+    
+    A1 -- สำเร็จ --> A3_Success[บันทึก Log: เชื่อมต่อ Server สำเร็จ];
+    A3_Success --> B_Start;
+    
+    A_NotReady --> X_Start((เข้าสู่ X: Manual Handle));
+    
+    B_Start --> B1{ถึงเวลาตาม Schedule ทุก 5 นาที?}; 
+
+    B1 -- ไม่ถึงเวลา --> B_End((จบกระบวนการ B)); 
+    
+    B1 -- ถึงเวลา --> B2_Log[บันทึก Log: ถึงรอบเวลาแล้ว];
+    
+    B2_Log --> C_Start((เข้าสู่ C: Get CSC)); 
+
+    B_End --> H;
+    
+    C_Start --> C1[ดึง ProjectID ล่าสุดจาก CSC]; 
+    
+    C1 --> C2{ProjectID ล่าสุด ซ้ำกับที่เคยบันทึกไปแล้วหรือไม่?};
+    
+    C2 -- ซ้ำ/เป็นข้อมูลเก่า --> C3_Log_Fail[บันทึก Log: ยังไม่มีข้อมูลใหม่ให้ดึง];
+    C3_Log_Fail --> C_End((จบกระบวนการ C)); 
+    
+    C2 -- ไม่ซ้ำ/เป็นข้อมูลใหม่ --> C4_Log_Success[บันทึก Log: พบข้อมูลใหม่ ProjectID: X]; 
+    
+    C4_Log_Success --> C5[ดึง GET ข้อมูล CSC ทั้งชุด]; 
+    
+    C5 --> C6_Log_Data[บันทึก Log: ดึงข้อมูลสำเร็จ];
+
+    C6_Log_Data --> D_Start((เข้าสู่ D: เตรียม/รวมข้อมูล));
+    
+    C_End --> H;
+    
+    D_Start --> D1{ข้อมูลลูกค้าครบถ้วน?};
+    
+    D1 -- ขาด --> D2[ดึง Customer จาก CSC];
+    
+    D2 --> D3{เจอ Customer ใน CSC?};
+    
+    D3 -- ไม่เจอ --> D4_Err[Log/Alert: ข้อมูลลูกค้าขาดหาย];
+    D4_Err --> X_Start;
+    
+    D3 -- เจอ --> D5_Merge[รวม Customer เข้ากับชุดข้อมูล];
+    D5_Merge --> D5_Check{รวมข้อมูลสำเร็จ?};
+    
+    D5_Check -- ไม่สำเร็จ --> D5_Log_Err[Log Error: รวมข้อมูลล้มเหลว];
+    D5_Log_Err --> H;
+    
+    D5_Check -- สำเร็จ --> D5_Log_OK[Log: รวมข้อมูลสำเร็จ];
+    D5_Log_OK --> D1;
+    
+    D1 -- ครบถ้วน --> E_Start((เข้าสู่ E: Mapping));
+    
+    E_Start --> E1_Map[Map Fields CSC <-> Winspeed];
+    
+    E1_Map --> E2{Map สำเร็จ?};
+    
+    E2 -- สำเร็จ --> E3_Log_OK[Log: Map สำเร็จ];
+    E3_Log_OK --> F_Start((เข้าสู่ F: Post Winspeed));
+    
+    E2 -- ไม่สำเร็จ --> E4_Log_Err[Log Error: Map ไม่สำเร็จ เพราะ X];
+    E4_Log_Err --> H;
+    
+    F_Start --> F1{Post ข้อมูลสู่ Winspeed สำเร็จ?};
+    
+    F1 -- สำเร็จ --> F2_Log_OK[บันทึก Log: Post สำเร็จ];
+    F2_Log_OK --> F4_Update_ID[บันทึก ProjectID ล่าสุดว่าเป็นของเก่า]; 
+    F4_Update_ID --> H;
+    
+    F1 -- ไม่สำเร็จ --> F3_Log_Err[บันทึก Log: Post ล้มเหลว เพราะ Y];
+    F3_Log_Err --> H;
+    
+    X_Start --> X1_Alert[แจ้งเตือน Admin/ทีมงานเพื่อแก้ไขข้อมูล];
+    
+    X1_Alert --> X2_Log[บันทึก Log: Process หยุด, รอ Manual Intervention];
+    
+    X2_Log --> X_End((จบ X));
+    
+    X_End --> H;

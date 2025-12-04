@@ -1,0 +1,42 @@
+graph TD
+
+    %% C: ตรวจสอบและเตรียม Customer ให้ WinSpeed พร้อมใช้งาน
+
+    C_Start((เริ่ม C: ตรวจสอบ Customer)) --> C1[ค้นหา Customer ใน WinSpeed ด้วย CustomerName]
+
+    C1 --> C2{พบ Customer ใน WinSpeed หรือไม่}
+
+    %% กรณีพบแล้ว ใช้ต่อได้เลย
+    C2 -- พบ --> L_Found[LOG: พบ Customer ใน WinSpeed]
+    L_Found --> D_Start[ไปขั้นตอน D: ทำงานต่อด้วย Customer ที่พบแล้ว]
+
+    %% กรณีไม่พบใน WinSpeed
+    C2 -- ไม่พบ --> C3[เรียก API GET Customer จาก CSC]
+
+    %% ตรวจผล GET จาก CSC (ทั้ง Status และว่ามีข้อมูลจริงไหม)
+    C3 --> C4{ได้ Response ปกติและมีข้อมูล Customer หรือไม่}
+
+    C4 -- ไม่ได้ หรือไม่มีข้อมูล --> EH_GetCust[เรียก ErrorHandler สำหรับ GET Customer จาก CSC]
+
+    C4 -- ได้ข้อมูล --> C5[เรียก API POST สร้าง Customer ใหม่ใน WinSpeed]
+
+    %% ตรวจผล POST เข้า WinSpeed
+    C5 --> C6{สร้าง Customer ใน WinSpeed สำเร็จหรือไม่}
+
+    C6 -- ไม่สำเร็จ --> EH_PostCust[เรียก ErrorHandler สำหรับ POST Customer ไป WinSpeed]
+
+    %% ถ้า POST สำเร็จ วนกลับไปค้นหาอีกรอบให้แน่ใจว่ามีแล้ว
+    C6 -- สำเร็จ --> L_Inserted[LOG: สร้าง Customer ใหม่ใน WinSpeed สำเร็จ]
+    L_Inserted --> C1
+
+    %% รวมทาง ErrorHandler ของ GET และ POST
+    EH_GetCust --> EH_Result{ErrorHandler สรุปผล}
+    EH_PostCust --> EH_Result
+
+    %% ถ้า ErrorHandler บอกให้ลองใหม่
+    EH_Result -- ให้ลองใหม่ --> L_Retry[LOG: ErrorHandler ตัดสินใจให้ลองใหม่ในขั้น C]
+    L_Retry --> C1
+
+    %% ถ้า ErrorHandler บอกให้หยุด (DeadQueue)
+    EH_Result -- ให้หยุด --> L_Dead[LOG: ErrorHandler ตัดสินใจให้หยุด และส่งเข้า DeadQueue]
+    L_Dead --> C_End((จบขั้นตอน C ด้วยสถานะล้มเหลว))

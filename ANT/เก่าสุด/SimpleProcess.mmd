@@ -1,0 +1,19 @@
+graph TD
+    A{A: Engine/Server พร้อม?};
+    
+    A -- ไม่พร้อม --> H[รอรอบถัดไป];
+    
+    A -- พร้อม --> B_Schedule[B: ตรวจสอบ Schedule];
+    
+    B_Schedule --> C_GetCSC[C: Get CSC];
+    
+    C_GetCSC --> D_Prepare[D: เตรียม/รวมข้อมูลให้สมบูรณ์];
+    
+    D_Prepare --> E_Map[E: Mapping และ Validation];
+    
+    E_Map --> F_Post[F: Post Winspeed];
+    
+    F_Post --> G_End((จบการทำงาน));
+    
+    G_End --> H;
+    H --> A;

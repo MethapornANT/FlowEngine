@@ -1,0 +1,8 @@
+graph TD
+    F_Start((เข้าสู่ F: Post Winspeed)) --> F1{Post ข้อมูลสู่ Winspeed สำเร็จ?};
+    
+    F1 -- สำเร็จ --> F2_Log_OK[บันทึก Log: Post สำเร็จ];
+    F2_Log_OK --> F_End((จบ F));
+    
+    F1 -- ไม่สำเร็จ --> F3_Log_Err[บันทึก Log: Post ล้มเหลว เพราะ Y];
+    F3_Log_Err --> F_End;

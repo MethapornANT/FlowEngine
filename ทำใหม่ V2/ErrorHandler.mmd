@@ -1,0 +1,17 @@
+graph TD
+A[เริ่ม ErrorHandler] --> B{มี Response ไหม}
+B -- ไม่มี --> T[Transport Error เช่น Timeout หรือ Network]
+B -- มี --> C{Status Code}
+
+C -- 200 ถึง 299 --> S[SUCCESS]
+C -- 408 หรือ 429 หรือ 500 หรือ 502 หรือ 503 หรือ 504 --> R[Retryable Error]
+C -- 400 หรือ 401 หรือ 403 หรือ 404 หรือ 422 --> N[Non Retry Error]
+C -- อื่นๆ --> U[Unknown Error]
+
+T --> O[เตรียม ErrorCode และ ErrorType เพื่อส่งกลับ]
+R --> O
+N --> O
+U --> O
+S --> O
+
+O --> Z[ส่งผลลัพธ์กลับให้ Caller]

@@ -1,0 +1,10 @@
+graph TD
+    E_Start((เข้าสู่ E: Mapping)) --> E1_Map[Map Fields CSC <-> Winspeed];
+    
+    E1_Map --> E2{Map สำเร็จ?};
+    
+    E2 -- สำเร็จ --> E3_Log_OK[Log: Map สำเร็จ];
+    E3_Log_OK --> F_Start[ส่งต่อไปยัง F: Post Winspeed];
+    
+    E2 -- ไม่สำเร็จ --> E4_Log_Err[Log Error: Map ไม่สำเร็จ เพราะ X];
+    E4_Log_Err --> E_End((จบ E));

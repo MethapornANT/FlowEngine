@@ -8,10 +8,16 @@ C -- 408 หรือ 429 หรือ 500 หรือ 502 หรือ 503 ห
 C -- 400 หรือ 401 หรือ 403 หรือ 404 หรือ 422 --> N[Non Retry Error]
 C -- อื่นๆ --> U[Unknown Error]
 
-T --> O[เตรียม ErrorCode และ ErrorType เพื่อส่งกลับ]
-R --> O
-N --> O
-U --> O
-S --> O
+T --> Lr[Log ชื่อ API และ ErrorCode สำหรับ Retry]
+R --> Lr
+N --> Ln[Log ชื่อ API และ ErrorCode สำหรับ Non Retry]
+U --> Ln
+S --> Ls[Log ชื่อ API และ SUCCESS]
 
-O --> Z[ส่งผลลัพธ์กลับให้ Caller]
+
+Ln --> D[ส่งผลลัพธ์ DeadQueue]
+
+Lr --> AC[เพิ่ม attemptCount ของ Record นี้ +1]
+AC --> M{attemptCount ถึง MaxRetry หรือยัง}
+M -- ใช่ --> D
+M -- ไม่ --> ZR[ส่งผลลัพธ์ RETRY]

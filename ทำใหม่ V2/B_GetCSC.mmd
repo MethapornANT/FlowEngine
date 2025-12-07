@@ -1,0 +1,16 @@
+graph TD
+A[เริ่มประมวลผล Record และตั้งค่า attemptCount = 0] --> B[เรียก API เป้าหมาย]
+B --> C{ได้ Response 2xx ไหม?}
+
+C -- ใช่ --> F[บันทึก Log SUCCESS]
+F --> K[ไปขั้นตอน C]
+
+C -- ไม่ --> E[ErrorHandler]
+
+E --> R{สรุปผล ErrorHandler}
+
+R -- ลองใหม่ --> G[เพิ่ม attemptCount และพักก่อนลองใหม่]
+R -- ส่ง Dead --> H[ส่งไป DeadQueue]
+
+G --> B
+H --> K

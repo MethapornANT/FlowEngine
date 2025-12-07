@@ -1,0 +1,94 @@
+graph TD
+
+%% =========================
+%% ENGINE (ไฟล์ A)
+%% =========================
+subgraph ENGINE [ENGINE - คุมเวลา 5 นาที]
+A_Start[Start Engine] --> L_Start[LOG เริ่มทำงาน]
+L_Start --> A1{ครบ 5 นาทีหรือยัง}
+A1 -- ยังไม่ครบ --> A_Wait[รอ]
+A_Wait --> A1
+A1 -- ครบแล้ว --> B_Start[เริ่มขั้นตอน B]
+end
+
+
+%% =========================
+%% STEP B (ไฟล์ B)
+%% =========================
+subgraph STEP_B [STEP B - เรียก API หลัก]
+B_Start --> B1[เรียก API เป้าหมาย]
+
+B1 --> B2{ได้ Response 2xx ไหม}
+B2 -- ใช่ --> B_Success[LOG SUCCESS]
+B_Success --> C_Start
+
+B2 -- ไม่ --> B_EH[ErrorHandler บันทึก Log และ ErrorCode]
+
+B_EH --> B_Result{ผลลัพธ์จาก ErrorHandler}
+B_Result -- RETRY --> B1
+B_Result -- DEAD --> B_Dead[ส่งไป DeadQueue]
+B_Dead --> B_End[จบขั้นตอน B]
+end
+
+
+%% =========================
+%% STEP C (ไฟล์ C)
+%% =========================
+subgraph STEP_C [STEP C - ตรวจสอบ Customer]
+C_Start --> C1[ค้นหา Customer ใน WinSpeed]
+
+C1 --> C2{พบหรือไม่}
+C2 -- พบ --> D_Start
+C2 -- ไม่พบ --> C3[เรียก GET Customer จาก CSC]
+
+C3 --> C4{ได้ข้อมูลไหม}
+C4 -- ไม่ --> C_EH[ErrorHandler Log และ ErrorCode]
+C4 -- ได้ --> C5[เรียก POST สร้าง Customer ใน WinSpeed]
+
+C5 --> C6{สร้างสำเร็จไหม}
+C6 -- สำเร็จ --> D_Start
+C6 -- ไม่สำเร็จ --> C_EH
+
+C_EH --> C_Result{ผลลัพธ์จาก ErrorHandler}
+C_Result -- RETRY --> C1
+C_Result -- DEAD --> C_Dead[ส่งไป DeadQueue]
+C_Dead --> C_End[จบขั้นตอน C]
+end
+
+
+%% =========================
+%% STEP D (ไฟล์ D)
+%% =========================
+subgraph STEP_D [STEP D - MAP Project]
+D_Start --> D1[เรียก API เพื่อ MAP ไป WinSpeed]
+
+D1 --> D2{MAP สำเร็จไหม}
+D2 -- สำเร็จ --> E_Start
+D2 -- ไม่สำเร็จ --> D_EH[ErrorHandler Log และ ErrorCode]
+
+D_EH --> D_Result{ผลลัพธ์จาก ErrorHandler}
+D_Result -- RETRY --> D1
+D_Result -- DEAD --> D_Dead[ส่งไป DeadQueue]
+D_Dead --> D_End[จบขั้นตอน D]
+end
+
+
+%% =========================
+%% STEP E (ไฟล์ E)
+%% =========================
+subgraph STEP_E [STEP E - POST ข้อมูลสุดท้าย]
+E_Start --> E1[เตรียมข้อมูลจากผล MAP]
+
+E1 --> E2[เรียก API POST เข้า WinSpeed]
+
+E2 --> E3{POST สำเร็จไหม}
+E3 -- สำเร็จ --> E_Success[LOG POST สำเร็จ]
+E_Success --> E_End_OK[จบขั้นตอน E สำเร็จ]
+
+E3 -- ไม่สำเร็จ --> E_EH[ErrorHandler Log และ ErrorCode]
+
+E_EH --> E_Result{ผลลัพธ์จาก ErrorHandler}
+E_Result -- RETRY --> E2
+E_Result -- DEAD --> E_Dead[ส่งไป DeadQueue]
+E_Dead --> E_End_Fail[จบขั้นตอน E ล้มเหลว]
+end

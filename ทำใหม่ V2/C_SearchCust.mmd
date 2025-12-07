@@ -1,0 +1,19 @@
+graph TD
+C_Start[เริ่ม C: ตรวจสอบ Customer] --> C1[ค้นหา Customer ใน WinSpeed ตามชื่อ]
+
+C1 --> C2{พบใน WinSpeed ไหม}
+C2 -- พบ --> D_Start[ไปขั้นตอน D ด้วย Customer นี้]
+C2 -- ไม่พบ --> C3[เรียก GET Customer จาก CSC]
+
+C3 --> C4{ได้ Response ปกติและมีข้อมูลไหม}
+C4 -- ไม่ --> EH[ErrorHandler: Log + ErrorCode]
+C4 -- ได้ --> C5[เรียก POST สร้าง Customer ใน WinSpeed]
+
+C5 --> C6{สร้าง Customer สำเร็จไหม}
+C6 -- สำเร็จ --> D_Start
+C6 -- ไม่สำเร็จ --> EH
+
+EH --> EHR{ผลลัพธ์จาก ErrorHandler}
+EHR -- ให้ลองใหม่ --> C1
+EHR -- ให้ส่ง Dead --> DeadQ[ส่งเข้า DeadQueue]
+DeadQ --> C_End[จบขั้นตอน C ด้วยสถานะล้มเหลว]

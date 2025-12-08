@@ -1,15 +1,12 @@
 graph TD
-B[เรียก API เป้าหมาย] --> C{ได้ Response 2xx ไหม}
+B_Start[เริ่ม B ประมวลผล Record] --> B_Call[เรียก API เป้าหมาย]
 
-C -- ใช่ --> F[บันทึก Log SUCCESS]
-F --> K[ไปขั้นตอน C]
+B_Call --> B_EH[ส่งผลลัพธ์ API ให้ ErrorHandler]
 
-C -- ไม่ --> E[ErrorHandler บันทึก Log และ ErrorCode]
+B_EH --> B_Result{ผลจาก ErrorHandler}
 
-E --> R{ผลลัพธ์จาก ErrorHandler}
+B_Result -- SUCCESS --> C_Start[ไปขั้นตอน C]
+B_Result -- RETRY --> B_Call
+B_Result -- DEAD --> B_Dead[ส่งเข้า DeadQueue และจบ B]
 
-R -- RETRY --> B
-R -- DEAD --> H[ส่งไป DeadQueue]
-
-
-H --> B_End[จบขั้นตอน B ด้วยสถานะล้มเหลว]
+B_Dead --> B_End[จบขั้นตอน B ด้วยสถานะล้มเหลว]

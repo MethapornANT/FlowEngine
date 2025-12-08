@@ -1,15 +1,13 @@
 graph TD
-D_Start[เริ่ม D การ MAP ข้อมูล Project] --> D1[เรียก API เพื่อ MAP ข้อมูลไป WinSpeed]
+D_Start[เริ่ม D MAP ข้อมูล Project] --> D1[เรียก API MAP ไป WinSpeed]
 
-D1 --> D2{MAP สำเร็จไหม}
+%% ส่งผลให้ ErrorHandler ตัดสิน
+D1 --> D_EH[ส่งผล MAP ให้ ErrorHandler]
 
-D2 -- สำเร็จ --> L_Success[บันทึก Log ว่า MAP สำเร็จ]
-L_Success --> E_Start[ไปขั้นตอน E]
+D_EH --> D_Result{ผลจาก ErrorHandler}
 
-D2 -- ไม่สำเร็จ --> EH[ErrorHandler บันทึก Log และ ErrorCode]
+D_Result -- SUCCESS --> E_Start[ไปขั้นตอน E]
+D_Result -- RETRY --> D1
+D_Result -- DEAD --> D_Dead[ส่งเข้า DeadQueue และจบ D]
 
-EH --> R{ผลลัพธ์จาก ErrorHandler}
-
-R -- RETRY --> D1
-R -- DEAD --> DeadQ[ส่งไป DeadQueue]
-DeadQ --> D_End[จบขั้นตอน D ด้วยสถานะล้มเหลว]
+D_Dead --> D_End[จบขั้นตอน D]
